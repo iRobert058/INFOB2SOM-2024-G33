@@ -44,10 +44,14 @@ class BoardGameMechanicsAnalyser:
 
         response = self.model.generate_content(prompt)
         response_relatable = self.model.generate_content(prompt_relatable)
+
+        #count the number of mechanics by counting the number of commas and adding 1
         number_of_mechanics = mechanics.count(",") + 1
 
+        #convert the reletable response into a string
         response_relatable = response_relatable.text
 
+        #calculate accuracy by dividing the number of mechanics that the AI got right (and converting it into an int) by the total number of mechanics
         accuracy = int(response_relatable) / number_of_mechanics
         
         # Output the response
