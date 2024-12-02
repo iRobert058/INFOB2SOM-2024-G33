@@ -7,7 +7,7 @@ class BoardGameMechanicsAnalyser:
 
     def load_dataset_clean(self):
         try:
-            self.dataset = pd.read_csv(self.dataset_path)
+            self.dataset = pd.read_csv(self.dataset_path, sep=";")
         except FileNotFoundError:
             raise FileNotFoundError("File not found")
         
@@ -18,5 +18,4 @@ class BoardGameMechanicsAnalyser:
         cleaned_dataset = self.dataset.dropna(subset=required_columns)
         return cleaned_dataset
 
-analyser = BoardGameMechanicsAnalyser("dataset.csv", "AIzaSyDZ3sSK2rXGWJSc-h8qZF3C2GNaiziA-do")
-print(analyser.load_dataset_clean())
+
