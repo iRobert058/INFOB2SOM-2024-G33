@@ -39,12 +39,22 @@ class BoardGameMechanicsAnalyser:
         
         # Generate the prompt using generative AI
         prompt = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Could you tell me which of these mechanics actually apply to the game? Do not add any text formatting. Please respond with a list of applicable mechanics and a list of those that do not apply. Please give a total amount of mechanics that apply to the game, and a total amount that dont apply ending the prompt."
+        
+        prompt_relatable = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
+
         response = self.model.generate_content(prompt)
+        response_relatable = self.model.generate_content(prompt_relatable)
+        number_of_mechanics = mechanics.count(",") + 1
+
+        response_relatable = response_relatable.text
+
+        accuracy = int(response_relatable) / number_of_mechanics
         
         # Output the response
         print(response.text)
+        print(f"The accuracy of the GenAi with the ground truth is {accuracy}")
 
 # Example usage
 analyser = BoardGameMechanicsAnalyser('dataset.csv', 'AIzaSyDZ3sSK2rXGWJSc-h8qZF3C2GNaiziA-do')
 analyser.load_dataset_clean()
-analyser.verify_mechanics_with_genai('Scythe')
+analyser.verify_mechanics_with_genai('Gloomhaven')
