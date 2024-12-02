@@ -47,4 +47,4 @@ class BoardGameMechanicsAnalyser:
 # Example usage
 analyser = BoardGameMechanicsAnalyser('dataset.csv', 'AIzaSyDZ3sSK2rXGWJSc-h8qZF3C2GNaiziA-do')
 analyser.load_dataset_clean()
-analyser.verify_mechanics_with_genai('Gloomhaven')
+analyser.verify_mechanics_with_genai('Scythe')
