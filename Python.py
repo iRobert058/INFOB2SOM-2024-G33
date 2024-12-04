@@ -63,7 +63,7 @@ class BoardGameMechanicsAnalyser:
         
         top_200_list = (
             self.cleaned_dataset.sort_values(by=sort_by, ascending=ascending)
-            .head(20) # Limit to top 10 for testing
+            .head(20) # You can change the limit here for testing
             .to_dict(orient='records')
         )
 
