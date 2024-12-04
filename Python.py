@@ -85,16 +85,18 @@ class BoardGameMechanicsAnalyser:
                 total_applicable_mechanics += applicable_mechanics
                 
                 print(f"Processed {game_name}: {applicable_mechanics} applicable mechanics")
-                time.sleep(4)  # Avoid hitting API rate limits
-            except Exception as e:
-                print(f"Error processing game '{game['Name']}': {e}")
+                #time.sleep(4)  # Avoid hitting API rate limits
+            except Exception as Error:
+                print(f"Error processing game '{game['Name']}': {Error}")
 
         total_length_top_200 = sum(len(key) for key in top_200_list)
 
-        print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
-        print(f"Average applicable mechanics per game: {total_applicable_mechanics / total_length_top_200}")
+        average_applicable_mechanics = total_applicable_mechanics / total_length_top_200
 
-        return total_applicable_mechanics
+        print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
+        print(f"Average applicable mechanics per game: {average_applicable_mechanics}")
+
+        return average_applicable_mechanics
 
 
 # Example usage
