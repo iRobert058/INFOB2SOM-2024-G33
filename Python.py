@@ -46,6 +46,7 @@ class BoardGameMechanicsAnalyser:
 
         print(f"AI response for {game_name}: {response.text.strip()}")
         print(f"Accuracy of mechanics validation for {game_name}: {accuracy}")
+        print("")
         return accuracy
 
     # Retrieve the top 200 games sorted by a column
@@ -58,24 +59,40 @@ class BoardGameMechanicsAnalyser:
         
         top_200_list = (
             self.cleaned_dataset.sort_values(by=sort_by, ascending=ascending)
-            .head(200)
+            .head(10) # Limit to top 10 for testing
             .to_dict(orient='records')
         )
         return top_200_list
 
     # Calculate total applicable mechanics
-    def calculate_average_rating(self, game_name: str):
-        game_row = self.cleaned_dataset[self.cleaned_dataset['Name'] == game_name]
-        if game_row.empty:
-            raise ValueError(f"Game '{game_name}' not found in the dataset.")
-        
-        mechanics = game_row['Mechanics'].values[0]
-        mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
-        
-        prompt_relatable_top200 = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
-        response_top200 = self.model.generate_content(prompt_relatable_top200)
+    def calculate_total_applicable_mechanics(self, top_200_list):
+        if not hasattr(self, 'cleaned_dataset'):
+            raise AttributeError("Dataset is not loaded or cleaned. Please call load_dataset_clean() first.")
 
-        return int(response_top200.text.strip())
+        total_applicable_mechanics = 0
+
+        for game in top_200_list:
+            try:
+                game_name = game['Name']
+                mechanics = game['Mechanics']
+                mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
+                
+                prompt = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
+                response = self.model.generate_content(prompt)
+                applicable_mechanics = int(response.text.strip())  # Convert response to an integer
+                total_applicable_mechanics += applicable_mechanics
+                
+                print(f"Processed {game_name}: {applicable_mechanics} applicable mechanics")
+                time.sleep(4)  # Avoid hitting API rate limits
+            except Exception as e:
+                print(f"Error processing game '{game['Name']}': {e}")
+
+
+
+        print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
+        print(f"Average applicable mechanics per game: {total_applicable_mechanics / len(top_200_list)}")
+        return total_applicable_mechanics
+
 
 # Example usage
 if __name__ == "__main__":
@@ -89,17 +106,7 @@ if __name__ == "__main__":
     analyser.verify_mechanics_with_genai('Gloomhaven')
 
     # Example: Process top 200 games
-    top_200_games = analyser.get_top_200_list(sort_by='Rating Average', ascending=False)
-    total_applicable_mechanics = 0
+    top_200_list = analyser.get_top_200_list()
 
-    for game in top_200_games:
-        try:
-            result = analyser.calculate_average_rating(game['Name'])
-            total_applicable_mechanics += result
-            time.sleep(4)  # Avoid rate-limiting
-        except ValueError:
-            raise ValueError(f"Error processing game '{game['Name']}'")
-
-
-
-    print(f"Total applicable mechanics for top 200 games: {total_applicable_mechanics}")
+    # Calculate the total applicable mechanics
+    analyser.calculate_total_applicable_mechanics(top_200_list)
