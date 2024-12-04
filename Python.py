@@ -63,7 +63,7 @@ class BoardGameMechanicsAnalyser:
         
         top_200_list = (
             self.cleaned_dataset.sort_values(by=sort_by, ascending=ascending)
-            .head(10) # Limit to top 10 for testing
+            .head(20) # Limit to top 10 for testing
             .to_dict(orient='records')
         )
 
@@ -88,20 +88,23 @@ class BoardGameMechanicsAnalyser:
                 applicable_mechanics = int(response.text.strip())  # Convert response to an integer
                 total_applicable_mechanics += applicable_mechanics
                 
-                print(f"Processed {game_name}: {applicable_mechanics} applicable mechanics")
+                print(f"Processed {game_name}: found {applicable_mechanics} applicable mechanics")
                 time.sleep(4)  # Avoid hitting API rate limits
             except Exception as Error:
                 print(f"Error processing game '{game['Name']}': {Error}")
 
-        # Calculate average top 200 applicable mechanics
+        # Calculate ground thruth average top 200 applicable mechanics
         total_length_top_200 = sum(len(key) for key in top_200_list)
+        
 
         average_applicable_mechanics = total_applicable_mechanics / total_length_top_200
 
         # Print results
         print("")
-        print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
-        print(f"Average applicable mechanics per game: {average_applicable_mechanics}")
+        print(f"Ground truth applicable mechanics for top 200 games: {total_length_top_200}")
+        print(f"Ai found a total of applicable mechanics for top 200 games: {total_applicable_mechanics}")
+        print("")
+        print(f"Average correspondense: {average_applicable_mechanics*100} %")
 
         return average_applicable_mechanics
 
