@@ -62,6 +62,8 @@ class BoardGameMechanicsAnalyser:
             .head(10) # Limit to top 10 for testing
             .to_dict(orient='records')
         )
+
+        
         return top_200_list
 
     # Calculate total applicable mechanics
@@ -87,10 +89,11 @@ class BoardGameMechanicsAnalyser:
             except Exception as e:
                 print(f"Error processing game '{game['Name']}': {e}")
 
-
+        total_length_top_200 = sum(len(key) for key in top_200_list)
 
         print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
-        print(f"Average applicable mechanics per game: {total_applicable_mechanics / len(top_200_list)}")
+        print(f"Average applicable mechanics per game: {total_applicable_mechanics / total_length_top_200}")
+
         return total_applicable_mechanics
 
 
