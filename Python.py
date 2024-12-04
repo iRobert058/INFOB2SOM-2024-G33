@@ -47,7 +47,7 @@ class BoardGameMechanicsAnalyser:
         accuracy = int(response.text.strip()) / number_of_mechanics
 
         # Print results
-        print(f"AI response for {game_name}: {response.text.strip()}")
+        print(f"Ai Mechanic correspondense for the game {game_name}: {response.text.strip()} applicable mechanics")
         print(f"Accuracy of mechanics validation for {game_name}: {accuracy}")
         print("")
 
@@ -99,6 +99,7 @@ class BoardGameMechanicsAnalyser:
         average_applicable_mechanics = total_applicable_mechanics / total_length_top_200
 
         # Print results
+        print("")
         print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
         print(f"Average applicable mechanics per game: {average_applicable_mechanics}")
 
