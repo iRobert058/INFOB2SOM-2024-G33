@@ -42,11 +42,15 @@ class BoardGameMechanicsAnalyser:
         response = self.model.generate_content(prompt)
         
         number_of_mechanics = mechanics.count(",") + 1
+
+        # Calculate accuracy
         accuracy = int(response.text.strip()) / number_of_mechanics
 
+        # Print results
         print(f"AI response for {game_name}: {response.text.strip()}")
         print(f"Accuracy of mechanics validation for {game_name}: {accuracy}")
         print("")
+
         return accuracy
 
     # Retrieve the top 200 games sorted by a column
@@ -66,7 +70,7 @@ class BoardGameMechanicsAnalyser:
         
         return top_200_list
 
-    # Calculate total applicable mechanics
+    #Ask GenAI to interpet the total applicable mechanics for the top 200 games and return the total
     def calculate_total_applicable_mechanics(self, top_200_list):
         if not hasattr(self, 'cleaned_dataset'):
             raise AttributeError("Dataset is not loaded or cleaned. Please call load_dataset_clean() first.")
@@ -85,14 +89,16 @@ class BoardGameMechanicsAnalyser:
                 total_applicable_mechanics += applicable_mechanics
                 
                 print(f"Processed {game_name}: {applicable_mechanics} applicable mechanics")
-                #time.sleep(4)  # Avoid hitting API rate limits
+                time.sleep(4)  # Avoid hitting API rate limits
             except Exception as Error:
                 print(f"Error processing game '{game['Name']}': {Error}")
 
+        # Calculate average top 200 applicable mechanics
         total_length_top_200 = sum(len(key) for key in top_200_list)
 
         average_applicable_mechanics = total_applicable_mechanics / total_length_top_200
 
+        # Print results
         print(f"Total applicable mechanics for top 10 games: {total_applicable_mechanics}")
         print(f"Average applicable mechanics per game: {average_applicable_mechanics}")
 
