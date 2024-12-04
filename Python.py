@@ -1,5 +1,6 @@
 import pandas as pd
 import google.generativeai as genai
+import time
 
 class BoardGameMechanicsAnalyser:
     def __init__(self, dataset_path: str, api_key: str):
@@ -71,9 +72,22 @@ class BoardGameMechanicsAnalyser:
             raise ValueError(f"Column '{sort_by}' not found in the dataset.")
         
         # Sort the dataset and get the top 200 rows
-        top_200_games = self.cleaned_dataset.sort_values(by=sort_by, ascending=ascending).head(200)
+        top_200_list= self.cleaned_dataset[['Name', 'Mechanics']].to_dict(orient='records')
 
-        return top_200_games
+        return top_200_list
+    
+    def calculate_average_rating(self, game_name: str):
+
+        game_row = self.cleaned_dataset[self.cleaned_dataset['Name'] == game_name]
+        
+        # Extract game information safely
+        mechanics = game_row['Mechanics'].values[0]
+        mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
+
+        prompt_relatable_top200 = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
+        response_top200 = self.model.generate_content(prompt_relatable_top200)
+
+        print(response_top200.text)
 
 # Example usage
 analyser = BoardGameMechanicsAnalyser('dataset.csv', 'AIzaSyDZ3sSK2rXGWJSc-h8qZF3C2GNaiziA-do')
@@ -81,5 +95,12 @@ analyser.load_dataset_clean()
 analyser.verify_mechanics_with_genai('Gloomhaven')
 top_200_games = analyser.get_top_200_list(sort_by='Rating Average', ascending=False)
 
-print(top_200_games[['Name', 'Rating Average', 'Year Published']])
+
+
+
+
+
+
+
+
     
