@@ -9,7 +9,7 @@ class BoardGameMechanicsAnalyser:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("gemini-1.5-flash")
 
-    # Load the dataset
+    # Load and clean the dataset
     def load_dataset_clean(self, sep=";"):
         try:
             self.dataset = pd.read_csv(self.dataset_path, sep=sep)
@@ -20,87 +20,86 @@ class BoardGameMechanicsAnalyser:
         if not all(col in self.dataset.columns for col in required_columns):
             raise ValueError("Dataset is missing required columns")
         
-        #clean the data
+        # Clean the data
         self.cleaned_dataset = self.dataset.dropna(subset=required_columns)
         self.cleaned_dataset = self.cleaned_dataset[self.cleaned_dataset['Year Published'] != 0]
 
         return self.cleaned_dataset
-    
+
+    # Verify mechanics using GenAI
     def verify_mechanics_with_genai(self, game_name: str):
-        # Ensure the dataset has been cleaned and loaded
         if not hasattr(self, 'cleaned_dataset'):
             raise AttributeError("Dataset is not loaded or cleaned. Please call load_dataset_clean() first.")
         
-        # Filter to find the specific game by name
         game_row = self.cleaned_dataset[self.cleaned_dataset['Name'] == game_name]
-        
-        # Ensure the game exists in the dataset
         if game_row.empty:
             raise ValueError(f"Game '{game_name}' not found in the dataset.")
         
-        # Extract game information safely
         mechanics = game_row['Mechanics'].values[0]
         mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
         
-        # Generate the prompt using generative AI
-        prompt = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Could you tell me which of these mechanics actually apply to the game? Do not add any text formatting. Please respond with a list of applicable mechanics and a list of those that do not apply. Please give a total amount of mechanics that apply to the game, and a total amount that dont apply ending the prompt."
-        
-        prompt_relatable = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
-
+        prompt = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
         response = self.model.generate_content(prompt)
-        response_relatable = self.model.generate_content(prompt_relatable)
-
-        #count the number of mechanics by counting the number of commas and adding 1
+        
         number_of_mechanics = mechanics.count(",") + 1
+        accuracy = int(response.text.strip()) / number_of_mechanics
 
-        #calculate accuracy by dividing the number of mechanics that the AI got right (and converting it into an int) by the total number of mechanics
-        accuracy = (int(response_relatable.text)) / number_of_mechanics
+        print(f"AI response for {game_name}: {response.text.strip()}")
+        print(f"Accuracy of mechanics validation for {game_name}: {accuracy}")
+        return accuracy
 
-        # Output the response
-        print(response.text)
-        print(f"The accuracy of the GenAi with the ground truth is {accuracy}")
-        return
-    
-    def get_top_200_list(self, sort_by: str ="Rating Average", ascending: bool = False):
-        # Retrieves the top 200 board games from the dataset based on the specified column.
-        # Ensure the dataset has been cleaned and loaded
-
+    # Retrieve the top 200 games sorted by a column
+    def get_top_200_list(self, sort_by: str = "Rating Average", ascending: bool = False):
         if not hasattr(self, 'cleaned_dataset'):
             raise AttributeError("Dataset is not loaded or cleaned. Please call load_dataset_clean() first.")
         
         if sort_by not in self.cleaned_dataset.columns:
             raise ValueError(f"Column '{sort_by}' not found in the dataset.")
         
-        # Sort the dataset and get the top 200 rows
-        top_200_list= self.cleaned_dataset[['Name', 'Mechanics']].to_dict(orient='records')
-
+        top_200_list = (
+            self.cleaned_dataset.sort_values(by=sort_by, ascending=ascending)
+            .head(200)
+            .to_dict(orient='records')
+        )
         return top_200_list
-    
-    def calculate_average_rating(self, game_name: str):
 
+    # Calculate total applicable mechanics
+    def calculate_average_rating(self, game_name: str):
         game_row = self.cleaned_dataset[self.cleaned_dataset['Name'] == game_name]
+        if game_row.empty:
+            raise ValueError(f"Game '{game_name}' not found in the dataset.")
         
-        # Extract game information safely
         mechanics = game_row['Mechanics'].values[0]
         mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
-
+        
         prompt_relatable_top200 = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
         response_top200 = self.model.generate_content(prompt_relatable_top200)
 
-        print(response_top200.text)
+        return int(response_top200.text.strip())
 
 # Example usage
-analyser = BoardGameMechanicsAnalyser('dataset.csv', 'AIzaSyDZ3sSK2rXGWJSc-h8qZF3C2GNaiziA-do')
-analyser.load_dataset_clean()
-analyser.verify_mechanics_with_genai('Gloomhaven')
-top_200_games = analyser.get_top_200_list(sort_by='Rating Average', ascending=False)
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    # Initialize the analyser with a dataset path and API key
+    analyser = BoardGameMechanicsAnalyser('dataset.csv', 'AIzaSyDZ3sSK2rXGWJSc-h8qZF3C2GNaiziA-do')
     
+    # Load and clean the dataset
+    analyser.load_dataset_clean()
+
+    # Example: Verify mechanics for a single game
+    analyser.verify_mechanics_with_genai('Gloomhaven')
+
+    # Example: Process top 200 games
+    top_200_games = analyser.get_top_200_list(sort_by='Rating Average', ascending=False)
+    total_applicable_mechanics = 0
+
+    for game in top_200_games:
+        try:
+            result = analyser.calculate_average_rating(game['Name'])
+            total_applicable_mechanics += result
+            time.sleep(4)  # Avoid rate-limiting
+        except ValueError:
+            raise ValueError(f"Error processing game '{game['Name']}'")
+
+
+
+    print(f"Total applicable mechanics for top 200 games: {total_applicable_mechanics}")
