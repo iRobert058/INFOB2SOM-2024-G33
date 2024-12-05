@@ -49,7 +49,7 @@ class BoardGameMechanicsAnalyser:
         # Print results
         print(f"Ai Mechanic correspondense for the game {game_name}: {response.text.strip()} applicable mechanics")
         print(f"Accuracy of mechanics validation for {game_name}: {accuracy}")
-        print("")
+        print("\n")
 
         return accuracy
 
@@ -63,32 +63,44 @@ class BoardGameMechanicsAnalyser:
         
         top_200_list = (
             self.cleaned_dataset.sort_values(by=sort_by, ascending=ascending)
-            .head(5) # You can change the limit here for testing
+            .head(200) # You can change the limit here for testing
             .to_dict(orient='records')
         )
 
         
         return top_200_list
 
-    #Ask GenAI to interpet the total applicable mechanics for the top 200 games and return the total
+    #Ask Gemini to interpet the total applicable mechanics for the top 200 games and calculate the accuracy, and the most and least assigned mechanics that gemini assigned
     def calculate_total_applicable_mechanics(self, top_200_list):
         if not hasattr(self, 'cleaned_dataset'):
             raise AttributeError("Dataset is not loaded or cleaned. Please call load_dataset_clean() first.")
 
         total_applicable_mechanics = 0
+        mechanic_counter = Counter()
+        all_mechanics = set()
 
         for game in top_200_list:
             try:
                 game_name = game['Name']
                 mechanics = game['Mechanics']
                 mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
+                all_mechanics.update(mechanics.split(","))
                 
+                # Prompt Gemini to verify mechanics
                 prompt = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
                 response = self.model.generate_content(prompt)
+
                 applicable_mechanics = int(response.text.strip())  # Convert response to an integer
                 total_applicable_mechanics += applicable_mechanics
+
+                applicable_mechanics_count = int(response.text.strip())
                 
                 print(f"Processed {game_name}: found {applicable_mechanics} applicable mechanics")
+
+                # Split mechanics and count those that Gemini found applicable
+                applicable_mechanics_list = mechanics.split(",")[:applicable_mechanics_count]
+                mechanic_counter.update([mechanic.strip() for mechanic in applicable_mechanics_list])
+
                 time.sleep(4)  # Avoid hitting API rate limits
             except Exception as Error:
                 print(f"Error processing game '{game['Name']}': {Error}")
@@ -105,41 +117,7 @@ class BoardGameMechanicsAnalyser:
         print("\n")
         print(f"Average Ai correspondense with the ground truth: {average_applicable_mechanics*100} %")
 
-        return average_applicable_mechanics
-    
-
-    def top_10_average_mechanics(self, top_200_list):
-        if not hasattr(self, 'cleaned_dataset'):
-            raise AttributeError("Dataset is not loaded or cleaned. Please call load_dataset_clean() first.")
-        
-        print("\nCalculating the top 10 and least 10 mechanics assigned by AI to the top 200 games...")
-
-        mechanic_counter = Counter()
-        all_mechanics = set()  # Track all mechanics mentioned in the dataset
-
-        for game in top_200_list:
-            try:
-                game_name = game['Name']
-                mechanics = game['Mechanics']
-                
-                # Parse mechanics into a standardized format
-                all_mechanics.update(mechanics.split(","))
-                mechanics_prompt = mechanics.replace(",", ", ").replace(" and ", ", ").replace(" or ", ", ")
-                
-                prompt = f"Verify the mechanics of the game '{game_name}'. The mechanics are {mechanics_prompt}. Please only give me the total amount that apply without any text formatting."
-                response = self.model.generate_content(prompt)
-                applicable_mechanics_count = int(response.text.strip())
-
-                # Split mechanics and count those deemed applicable
-                applicable_mechanics_list = mechanics.split(",")[:applicable_mechanics_count]
-                mechanic_counter.update([mechanic.strip() for mechanic in applicable_mechanics_list])
-
-                time.sleep(4)  # Avoid hitting API rate limits
-
-            except Exception as error:
-                print(f"Error processing game '{game['Name']}': {error}")
-        
-        # Identify the top 10 and least 10 mechanics
+        # Print top and least assigned mechanics by Gemini
         print("\nTop ten mechanics AI consistently assigned:")
         top_ten_mechanics = mechanic_counter.most_common(10)
         for mechanic, count in top_ten_mechanics:
@@ -155,10 +133,9 @@ class BoardGameMechanicsAnalyser:
         print("\nMechanics never attributed by AI:")
         for mechanic in sorted(unassigned_mechanics):
             print(mechanic)
-            
-        return top_ten_mechanics, least_ten_mechanics, unassigned_mechanics
-    
 
+        return average_applicable_mechanics, least_ten_mechanics, top_ten_mechanics, unassigned_mechanics
+    
 # Example usage
 if __name__ == "__main__":
     # Initialize the analyser with a dataset path and API key
@@ -173,7 +150,5 @@ if __name__ == "__main__":
     # Example: Process top 200 games
     top_200_list = analyser.get_top_200_list()
 
-    # Calculate the total applicable mechanics
+    # Calculate the total applicable mechanics, accuracy, and the most and least assigned mechanics.
     analyser.calculate_total_applicable_mechanics(top_200_list)
-
-    analyser.top_10_average_mechanics(top_200_list)
