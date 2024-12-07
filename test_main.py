@@ -2,31 +2,31 @@ import unittest
 from main import BoardGameMechanicsAnalyser
 import pandas as pd
 
-    #Status/User role: Softwareontwikkelaar die de functionaliteit van BoardGameMechanicsAnalyser test.
+    #status/User role software developer testing the functionality of BoardGameMechanicsAnalyser.
 class TestBoardGameMechanicsAnalyser(unittest.TestCase):
 
-        #verwachte uitkomst is dat het een dataclass is aka antwoord op de test moet OK zijn
+        #expected ourcome, it should be a dataclass, meaning the test's answer should be OK.
     def test_if_it_is_a_dataclass(self):
         self.assertTrue(isinstance(BoardGameMechanicsAnalyser, type))
 
-        #precondities: geldige testdataset en API-key
+        #setup of the precondition. Valid test dataset and API key.
     def setUp(self):
         self.analyser = BoardGameMechanicsAnalyser('test_dataset.csv', 'valid_api_key')
         
-        #testen of het werkt om top 200 te laden (nog geen data in de set) 
+        #testing whether it works to load the top 200 (no data in the dataset yet).
     def test_get_top_200_list_dataset_not_loaded(self):
         with self.assertRaises(AttributeError):
             #er moet hier een AttributeError optreden, preconditie: er is nog geen dataset geladen
             self.analyser.get_top_200_list(sort_by="Rating Average")
     
-        #Testen van de neppe cleaned_dataset bij een leeg lege tabel
+        #testing the fake cleaned_dataset with an empty table.
     def test_get_top_200_list_invalid_column(self):
         self.analyser.cleaned_dataset = pd.DataFrame({"ValidColumn": [1, 2, 3]})
         
         with self.assertRaises(ValueError):
             self.analyser.get_top_200_list(sort_by="InvalidColumn")
     
-        #cleaned_dataset na apen met kleine hoeveelheid data
+        #testing cleaned_dataset after mocking it with a small amount of data.
     def test_get_top_200_list_valid(self):
         data = {
             "Name": ["Apex Legends", "Fortnite", "Minecraft", "The Witcher"],
@@ -35,17 +35,17 @@ class TestBoardGameMechanicsAnalyser(unittest.TestCase):
         }
         self.analyser.cleaned_dataset = pd.DataFrame(data)
         
-        #verwachte resultaat als we het op "Rating Average" gaan sorteren (afhankelijk van de nep tabel hier boven)
+        #expected result if we sort it by "Rating Average" (based on the fake table above).
         expected_result = [
             {"Name": "The Witcher", "Rating Average": 9.5, "Mechanic": 4},
             {"Name": "Fortnite", "Rating Average": 9.0, "Mechanic": 2},
             {"Name": "Apex Legends", "Rating Average": 8.5, "Mechanic": 1},
             {"Name": "Minecraft", "Rating Average": 7.0, "Mechanic": 3}
-        ][:200]#max tot 200, erbij gedaan omdat we in t echte tot max 200 doen, ook al is het hier maar top 4 want geen zin om meer toe te voegen in de tabel (ben lui)
+        ][:200]#Maximum of 200, added here because in the real implementation, it caps at 200., Here, it’s just top 4 because I didn’t feel like adding more rows to the table (I’m lazy)
         
         result = self.analyser.get_top_200_list(sort_by="Rating Average", ascending=False)
         self.assertEqual(result, expected_result)
-        #Oproepen van het resultaat en kijken of het overeenkomt via de assertEqual
+        #call the result and check if it matches using assertEqual.
 
 if __name__ == "__main__":
     unittest.main()
